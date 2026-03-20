@@ -3,6 +3,16 @@
 // Loaded with defer — runs after HTML parses, never blocks the main thread.
 // No jQuery, no external dependencies. Total size: < 1KB.
 
+// ─── Non-blocking CSS load ────────────────────────────────────────────────────
+// The media="print" + onload trick requires script-src 'unsafe-inline' in CSP.
+// Injecting via JS is the CSP-safe equivalent — same non-blocking behaviour.
+(() => {
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = 'after-styles.css';
+  document.head.appendChild(link);
+})();
+
 // ─── Mobile Nav Toggle ────────────────────────────────────────────────────────
 const navToggle  = document.querySelector('.nav-toggle');
 const headerNav  = document.querySelector('.header-nav');

@@ -229,11 +229,9 @@
     }
   </style>
 
-  <!-- FIX 5 & 6: Non-critical styles loaded non-blocking -->
-  <link rel="stylesheet"
-        href="after-styles.css"
-        media="print"
-        onload="this.media='all'">
+  <!-- FIX 5 & 6: Non-critical styles injected by after-app.js (CSP-safe).
+       The media="print"/onload trick requires script-src 'unsafe-inline', which
+       conflicts with the strict CSP on this site. JS injection is equivalent. -->
   <noscript>
     <link rel="stylesheet" href="after-styles.css">
   </noscript>

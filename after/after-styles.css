@@ -1,0 +1,270 @@
+/* =============================================================================
+   BlueMorning Coffee — after-styles.css
+   Non-critical (below-fold) styles. Loaded non-blocking via media="print" trick.
+   Above-fold critical CSS is inlined in <head> of after/index.html.
+   ============================================================================= */
+
+/* ─── Menu Section ──────────────────────────────────────────────────────── */
+.menu-section {
+  padding: 5rem 1.5rem;
+  max-width: 1100px;
+  margin-inline: auto;
+}
+
+.menu-section h2 {
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  color: #2C1810;
+  text-align: center;
+  margin-block: 0 0.5rem;
+  letter-spacing: -0.02em;
+}
+
+.menu-section .section-sub {
+  text-align: center;
+  color: #6B7280;
+  margin-block-end: 3rem;
+  font-size: 1rem;
+}
+
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.menu-card {
+  background: #FFFBF7;
+  border: 1px solid #E5E1DC;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  transition: box-shadow 200ms ease, transform 200ms ease;
+}
+
+.menu-card:hover {
+  box-shadow: 0 8px 24px rgba(44, 24, 16, 0.1);
+  transform: translateY(-2px);
+}
+
+.menu-card-img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  display: block;
+  background: #F1EDE8;
+}
+
+.menu-card-body {
+  padding: 1.25rem;
+}
+
+.menu-card-body h3 {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: #2C1810;
+  margin-block: 0 0.25rem;
+}
+
+.menu-card-price {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #B45309;
+  margin-block-end: 0.5rem;
+}
+
+.menu-card-desc {
+  font-size: 0.875rem;
+  color: #6B7280;
+  line-height: 1.5;
+}
+
+/* ─── About Section ─────────────────────────────────────────────────────── */
+.about-section {
+  background: #FFF8F3;
+  padding: 5rem 1.5rem;
+}
+
+.about-inner {
+  max-width: 1100px;
+  margin-inline: auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  align-items: center;
+}
+
+.about-img {
+  width: 100%;
+  height: 360px;
+  object-fit: cover;
+  border-radius: 0.75rem;
+  display: block;
+}
+
+.about-content h2 {
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  color: #2C1810;
+  margin-block: 0 1rem;
+  letter-spacing: -0.02em;
+}
+
+.about-content p {
+  color: #4B5563;
+  line-height: 1.75;
+  font-size: 1rem;
+}
+
+.about-content p + p {
+  margin-block-start: 1rem;
+}
+
+/* ─── Contact Section ───────────────────────────────────────────────────── */
+.contact-section {
+  padding: 5rem 1.5rem;
+  max-width: 600px;
+  margin-inline: auto;
+  text-align: center;
+}
+
+.contact-section h2 {
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  color: #2C1810;
+  margin-block: 0 0.5rem;
+}
+
+.contact-address {
+  color: #6B7280;
+  font-size: 1rem;
+  margin-block-end: 2rem;
+}
+
+.contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  text-align: left;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.form-group label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid #D1D5DB;
+  border-radius: 0.375rem;
+  font-family: inherit;
+  font-size: 1rem;
+  color: #111827;
+  background: #fff;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #B45309;
+  box-shadow: 0 0 0 3px rgba(180, 83, 9, 0.15);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.btn-submit {
+  background: #2C1810;
+  color: #fff;
+  border: none;
+  border-radius: 0.375rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 150ms ease;
+  align-self: flex-start;
+}
+
+.btn-submit:hover {
+  background: #3D2419;
+}
+
+.btn-submit:focus-visible {
+  outline: 3px solid #B45309;
+  outline-offset: 3px;
+}
+
+/* ─── Footer ────────────────────────────────────────────────────────────── */
+.site-footer {
+  background: #2C1810;
+  color: #D6C9C1;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  font-size: 0.875rem;
+}
+
+.site-footer nav {
+  margin-block-start: 0.75rem;
+}
+
+.site-footer nav ul {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.site-footer a {
+  color: #D6C9C1;
+  text-decoration: none;
+  transition: color 150ms ease;
+}
+
+.site-footer a:hover {
+  color: #F5A623;
+}
+
+.site-footer a:focus-visible {
+  outline: 2px solid #F5A623;
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* ─── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .about-inner {
+    grid-template-columns: 1fr;
+  }
+
+  .about-img {
+    height: 240px;
+  }
+}
+
+@media (max-width: 480px) {
+  .menu-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ─── Reduced Motion ────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .menu-card {
+    transition: none;
+  }
+}

@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="BlueMorning Coffee — your neighborhood specialty coffee shop. Open daily in downtown.">
+  <!-- FIX: theme-color for browser chrome tinting on mobile -->
+  <meta name="theme-color" content="#2C1810">
+
+  <title>BlueMorning Coffee</title>
+
+  <!-- FIX 3: Preload LCP image — browser fetches it at highest priority
+       in parallel with HTML parsing, before CSS is even discovered. -->
+  <link rel="preload"
+        as="image"
+        href="https://placehold.co/1200x630/2C1810/F5A623?text=BlueMorning+Coffee"
+        fetchpriority="high">
+
+  <!-- FIX 4: Resource hints for font origin before the stylesheet request.
+       preconnect opens the TCP connection + TLS handshake in advance. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <!-- FIX 4: Non-blocking font load via media="print" trick.
+       media="print" means the browser fetches it at low priority without blocking render.
+       onload swaps it to media="all" once it has downloaded. -->
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+        media="print"
+        onload="this.media='all'">
+  <noscript>
+    <!-- Fallback for users with JS disabled -->
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap">
+  </noscript>
+
+  <!-- FIX 7: Resource hint for image placeholder CDN -->
+  <link rel="dns-prefetch" href="https://placehold.co">
+
+  <!-- FIX 6: Critical above-fold CSS inlined — ~1.5KB.
+       The browser can render the header and hero without any network request. -->
+  <style>
+    /* Minimal reset */
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: #FFF8F3;
+      color: #2C1810;
+      -webkit-font-smoothing: antialiased;
+    }
+    img { max-width: 100%; display: block; }
+
+    /* Skip link */
+    .skip-link {
+      position: absolute;
+      left: -9999px;
+      top: 1rem;
+      background: #2C1810;
+      color: #F5A623;
+      font-weight: 700;
+      padding: 0.5rem 1rem;
+      border-radius: 0.375rem;
+      text-decoration: none;
+      z-index: 1000;
+    }
+    .skip-link:focus { left: 1rem; }
+
+    /* Header */
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: #2C1810;
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: box-shadow 200ms ease;
+    }
+    .header--scrolled { box-shadow: 0 2px 12px rgba(0,0,0,0.25); }
+
+    .site-header a.brand {
+      color: #F5A623;
+      font-weight: 700;
+      font-size: 1.125rem;
+      text-decoration: none;
+      letter-spacing: -0.01em;
+    }
+    .site-header a.brand:focus-visible {
+      outline: 2px solid #F5A623;
+      outline-offset: 3px;
+      border-radius: 2px;
+    }
+
+    .header-nav ul {
+      display: flex;
+      gap: 1.5rem;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .header-nav a {
+      color: rgba(255,255,255,0.75);
+      text-decoration: none;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      transition: color 150ms ease;
+    }
+    .header-nav a:hover  { color: #F5A623; }
+    .header-nav a:focus-visible {
+      outline: 2px solid #F5A623;
+      outline-offset: 3px;
+      border-radius: 2px;
+    }
+
+    /* Hero */
+    .hero {
+      position: relative;
+      min-height: 65svh;
+      display: flex;
+      align-items: flex-end;
+      overflow: hidden;
+    }
+    .hero-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(44,24,16,0.85) 0%, rgba(44,24,16,0.2) 60%, transparent 100%);
+    }
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      padding: 3rem 1.5rem;
+      max-width: 700px;
+    }
+    .hero-content h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      color: #fff;
+      margin-block: 0 0.75rem;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+    .hero-content p {
+      font-size: clamp(1rem, 2vw, 1.125rem);
+      color: rgba(255,255,255,0.85);
+      margin-block: 0 1.5rem;
+      line-height: 1.6;
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      background: #F5A623;
+      color: #2C1810;
+      font-weight: 700;
+      font-size: 0.9375rem;
+      padding: 0.625rem 1.5rem;
+      border-radius: 0.375rem;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 150ms ease;
+    }
+    .btn-primary:hover { background: #FFBB44; }
+    .btn-primary:focus-visible {
+      outline: 3px solid #fff;
+      outline-offset: 3px;
+    }
+
+    /* Hamburger button */
+    .nav-toggle {
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      gap: 5px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.25rem;
+      border-radius: 0.25rem;
+      color: #fff;
+    }
+    .nav-toggle:focus-visible {
+      outline: 2px solid #F5A623;
+      outline-offset: 3px;
+    }
+    .hamburger-bar {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background-color: currentColor;
+      border-radius: 2px;
+      transition: transform 200ms ease, opacity 200ms ease;
+    }
+    .nav-toggle[aria-expanded="true"] .hamburger-bar:nth-child(1) {
+      transform: translateY(7px) rotate(45deg);
+    }
+    .nav-toggle[aria-expanded="true"] .hamburger-bar:nth-child(2) {
+      opacity: 0;
+      transform: scaleX(0);
+    }
+    .nav-toggle[aria-expanded="true"] .hamburger-bar:nth-child(3) {
+      transform: translateY(-7px) rotate(-45deg);
+    }
+
+    @media (max-width: 640px) {
+      .nav-toggle { display: flex; }
+      .header-nav {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #2C1810;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        flex-direction: column;
+        padding-block: 0.5rem;
+      }
+      .header-nav--open { display: flex; }
+      .header-nav ul { flex-direction: column; gap: 0; }
+      .header-nav a { display: block; padding: 0.75rem 1.5rem; }
+    }
+  </style>
+
+  <!-- FIX 5 & 6: Non-critical styles loaded non-blocking -->
+  <link rel="stylesheet"
+        href="after-styles.css"
+        media="print"
+        onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet" href="after-styles.css">
+  </noscript>
+
+  <!-- FIX: SVG favicon -->
+  <link rel="icon" type="image/svg+xml" href="/assets/images/favicon.svg">
+
+  <!-- FIX 5: Vanilla JS deferred — never blocks HTML parsing -->
+  <script defer src="after-app.js"></script>
+</head>
+<body>
+
+  <!-- FIX: Skip link for keyboard/AT users -->
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <!-- FIX 8: Semantic <header> landmark -->
+  <header class="site-header" role="banner">
+    <a class="brand" href="/" aria-label="BlueMorning Coffee — home">
+      BlueMorning Coffee
+    </a>
+
+    <!-- FIX 6: Semantic <nav> with aria-label, not div.nav-items -->
+    <nav class="header-nav" aria-label="Primary navigation">
+      <ul id="after-nav-menu" role="list">
+        <li><a href="#menu">Menu</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </nav>
+
+    <button
+      type="button"
+      class="nav-toggle"
+      aria-expanded="false"
+      aria-controls="after-nav-menu"
+      aria-label="Open navigation menu">
+      <span class="hamburger-bar" aria-hidden="true"></span>
+      <span class="hamburger-bar" aria-hidden="true"></span>
+      <span class="hamburger-bar" aria-hidden="true"></span>
+    </button>
+  </header>
+
+  <!-- FIX 8: <main> landmark -->
+  <main id="main">
+
+    <!-- FIX: Semantic <section> with aria-labelledby -->
+    <section class="hero" aria-labelledby="hero-heading">
+      <!-- FIX 1 & 2 & 3: picture element with WebP source, explicit dimensions,
+           fetchpriority="high" on LCP image, correct alt text, loading="eager" above fold -->
+      <picture>
+        <source
+          srcset="https://placehold.co/1200x630/2C1810/F5A623?text=BlueMorning+Coffee"
+          type="image/webp">
+        <img
+          class="hero-img"
+          src="https://placehold.co/1200x630/2C1810/F5A623?text=BlueMorning+Coffee"
+          width="1200"
+          height="630"
+          fetchpriority="high"
+          loading="eager"
+          alt="Warm interior of BlueMorning Coffee with wooden tables and ambient lighting">
+      </picture>
+      <div class="hero-overlay" aria-hidden="true"></div>
+      <div class="hero-content">
+        <h1 id="hero-heading">Where Every Cup Tells a Story</h1>
+        <p>Specialty coffee sourced from sustainable farms. Baked goods made fresh daily.
+           Your neighborhood café, open every morning.</p>
+        <a href="#menu" class="btn-primary">View Our Menu</a>
+      </div>
+    </section>
+
+    <!-- FIX 8: Semantic <section> for menu -->
+    <section id="menu" class="menu-section" aria-labelledby="menu-heading">
+      <h2 id="menu-heading">Our Menu</h2>
+      <p class="section-sub">Sourced with care. Made with intention.</p>
+
+      <!-- FIX 8: Semantic list for menu items -->
+      <ul class="menu-grid" role="list">
+
+        <li class="menu-card">
+          <!-- FIX 2: width + height on all images, loading="lazy" for below-fold -->
+          <img
+            class="menu-card-img"
+            src="https://placehold.co/400x250/F1EDE8/B45309?text=Pour+Over"
+            width="400"
+            height="250"
+            loading="lazy"
+            alt="Signature pour-over coffee in a glass carafe">
+          <div class="menu-card-body">
+            <!-- FIX 8: Actual <h3> heading, not a div -->
+            <h3>Signature Pour-Over</h3>
+            <p class="menu-card-price">$6.50</p>
+            <p class="menu-card-desc">Single-origin beans, slow-drip perfection. Bright and complex.</p>
+          </div>
+        </li>
+
+        <li class="menu-card">
+          <img
+            class="menu-card-img"
+            src="https://placehold.co/400x250/F1EDE8/B45309?text=Oat+Latte"
+            width="400"
+            height="250"
+            loading="lazy"
+            alt="Oat milk latte with latte art in a ceramic cup">
+          <div class="menu-card-body">
+            <h3>Oat Milk Latte</h3>
+            <p class="menu-card-price">$7.00</p>
+            <p class="menu-card-desc">Velvety steamed oat milk with our house espresso blend.</p>
+          </div>
+        </li>
+
+        <li class="menu-card">
+          <img
+            class="menu-card-img"
+            src="https://placehold.co/400x250/F1EDE8/B45309?text=Cold+Brew"
+            width="400"
+            height="250"
+            loading="lazy"
+            alt="Cold brew coffee in a tall glass with ice">
+          <div class="menu-card-body">
+            <h3>Cold Brew</h3>
+            <p class="menu-card-price">$5.50</p>
+            <p class="menu-card-desc">Steeped for 18 hours. Smooth, low-acid, and refreshing.</p>
+          </div>
+        </li>
+
+        <li class="menu-card">
+          <img
+            class="menu-card-img"
+            src="https://placehold.co/400x250/F1EDE8/B45309?text=Cortado"
+            width="400"
+            height="250"
+            loading="lazy"
+            alt="Cortado served in a small glass">
+          <div class="menu-card-body">
+            <h3>Cortado</h3>
+            <p class="menu-card-price">$5.00</p>
+            <p class="menu-card-desc">Equal parts espresso and warm milk. Bold and balanced.</p>
+          </div>
+        </li>
+
+        <li class="menu-card">
+          <img
+            class="menu-card-img"
+            src="https://placehold.co/400x250/F1EDE8/B45309?text=Matcha"
+            width="400"
+            height="250"
+            loading="lazy"
+            alt="Matcha latte with a layer of vivid green on top">
+          <div class="menu-card-body">
+            <h3>Matcha Latte</h3>
+            <p class="menu-card-price">$6.00</p>
+            <p class="menu-card-desc">Ceremonial grade matcha with steamed oat or whole milk.</p>
+          </div>
+        </li>
+
+        <li class="menu-card">
+          <img
+            class="menu-card-img"
+            src="https://placehold.co/400x250/F1EDE8/B45309?text=Seasonal"
+            width="400"
+            height="250"
+            loading="lazy"
+            alt="Seasonal special coffee drink">
+          <div class="menu-card-body">
+            <h3>Seasonal Special</h3>
+            <p class="menu-card-price">$7.50</p>
+            <p class="menu-card-desc">Ask your barista what's on the board today.</p>
+          </div>
+        </li>
+
+      </ul>
+    </section>
+
+    <!-- FIX 8: Semantic <section> for about -->
+    <section id="about" class="about-section" aria-labelledby="about-heading">
+      <div class="about-inner">
+        <!-- FIX 2: Explicit dimensions, lazy loading, descriptive alt -->
+        <img
+          class="about-img"
+          src="https://placehold.co/800x400/2C1810/F5A623?text=Our+Story"
+          width="800"
+          height="400"
+          loading="lazy"
+          alt="Baristas at BlueMorning Coffee preparing drinks behind the counter">
+        <div class="about-content">
+          <h2 id="about-heading">Our Story</h2>
+          <!-- FIX 7: Body text #4B5563 on #FFF8F3 = 7.2:1 contrast ratio ✓ -->
+          <p>
+            BlueMorning Coffee opened in 2019 with a simple idea: great coffee
+            deserves great company. We source directly from farms in Ethiopia,
+            Colombia, and Guatemala, and roast in small batches weekly.
+          </p>
+          <p>
+            Every cup is made with intention. We believe in paying farmers fairly,
+            keeping our footprint small, and making your morning a little brighter.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- FIX 8: Semantic <section> with a proper <form> -->
+    <section id="contact" class="contact-section" aria-labelledby="contact-heading">
+      <h2 id="contact-heading">Find Us</h2>
+      <p class="contact-address">
+        123 Main Street, Downtown &bull;
+        Mon&ndash;Fri 7am&ndash;7pm &bull;
+        Sat&ndash;Sun 8am&ndash;6pm
+      </p>
+
+      <!-- FIX 6 & 8: Actual <form> with associated <label> elements for each input -->
+      <form class="contact-form" novalidate aria-label="Contact form">
+        <div class="form-group">
+          <label for="contact-name">Your name</label>
+          <input
+            type="text"
+            id="contact-name"
+            name="name"
+            autocomplete="name"
+            required
+            aria-required="true">
+        </div>
+        <div class="form-group">
+          <label for="contact-email">Email address</label>
+          <input
+            type="email"
+            id="contact-email"
+            name="email"
+            autocomplete="email"
+            required
+            aria-required="true">
+        </div>
+        <div class="form-group">
+          <label for="contact-message">Message</label>
+          <textarea
+            id="contact-message"
+            name="message"
+            rows="4"
+            required
+            aria-required="true"></textarea>
+        </div>
+        <button type="submit" class="btn-submit">Send Message</button>
+      </form>
+    </section>
+
+  </main>
+
+  <!-- FIX 8: Semantic <footer> with landmark role -->
+  <footer class="site-footer" role="contentinfo">
+    <p>&copy; 2024 BlueMorning Coffee &bull; All rights reserved</p>
+    <!-- FIX 8: Semantic <nav> in footer, real <a> elements -->
+    <nav aria-label="Footer navigation">
+      <ul role="list">
+        <li><a href="#menu">Menu</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </nav>
+  </footer>
+
+</body>
+</html>

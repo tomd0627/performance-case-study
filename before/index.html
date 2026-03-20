@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<!--
+  ╔══════════════════════════════════════════════════════════════════════════╗
+  ║  INTENTIONAL PERFORMANCE ANTI-PATTERNS                                  ║
+  ║  This page deliberately demonstrates common web performance mistakes.   ║
+  ║  See the case study at / for a full analysis of each issue.             ║
+  ║                                                                         ║
+  ║  Issues documented here:                                                ║
+  ║  1. CSS @import for fonts (render-blocking)                             ║
+  ║  2. Full Bootstrap 5 (189KB, 94% unused)                                ║
+  ║  3. Synchronous jQuery in <head> (90KB blocking script)                 ║
+  ║  4. Hero image with no width/height/alt (causes CLS)                   ║
+  ║  5. All images without loading="lazy"                                   ║
+  ║  6. div-based nav with onclick (inaccessible)                           ║
+  ║  7. Poor color contrast (fails WCAG AA)                                 ║
+  ║  8. No semantic HTML landmarks                                          ║
+  ╚══════════════════════════════════════════════════════════════════════════╝
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <!-- ISSUE: No viewport meta — causes poor mobile rendering -->
+
+  <title>BlueMorning Coffee</title>
+
+  <!-- ISSUE 1: CSS @import is the worst way to load fonts.
+       It forces a synchronous network round-trip before rendering can begin.
+       The browser must: parse HTML → find <style> → parse @import → fetch fonts → render. -->
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=optional');
+  </style>
+
+  <!-- ISSUE 2: Full Bootstrap 5 loaded from CDN.
+       189KB unminified, ~24KB gzipped. DevTools Coverage shows 94% unused.
+       Also loaded synchronously — blocks the parser while it downloads. -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+
+  <!-- ISSUE 3: jQuery in <head> with no defer or async.
+       The HTML parser stops completely until this 90KB script downloads,
+       parses, and executes. Used here for a hover effect that CSS could handle. -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+  <!-- No favicon -->
+  <!-- No meta description -->
+  <!-- No Open Graph tags -->
+  <!-- No theme-color -->
+
+  <style>
+    /* ISSUE 7: Poor color contrast — #aaa on white is ~2.3:1 (WCAG AA requires 4.5:1) */
+    body {
+      font-family: Arial, sans-serif;
+      background: #ffffff;
+    }
+
+    .top-nav {
+      background: #f8f8f8;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #eee;
+    }
+
+    .nav-logo {
+      font-weight: bold;
+      font-size: 18px;
+      color: #333;
+    }
+
+    .nav-items {
+      display: flex;
+      gap: 24px;
+    }
+
+    /* ISSUE: Styling div elements like links — not keyboard accessible */
+    .nav-items div {
+      cursor: pointer;
+      font-size: 15px;
+      /* ISSUE 7: Very low contrast text */
+      color: #aaaaaa;
+      padding: 4px 0;
+    }
+
+    .hero-section {
+      text-align: center;
+      padding: 0;
+      margin-bottom: 40px;
+    }
+
+    /* ISSUE 4: No explicit image dimensions in CSS either */
+    .hero-img {
+      width: 100%;
+      display: block;
+    }
+
+    /* ISSUE 7: Low contrast text throughout */
+    .hero-tagline {
+      color: #aaaaaa;
+      font-size: 20px;
+      margin: 16px 0 8px;
+    }
+
+    .hero-sub {
+      color: #cccccc;
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+
+    .section-title {
+      font-size: 28px;
+      color: #222;
+      text-align: center;
+      margin: 40px 0 20px;
+    }
+
+    /* ISSUE: div used as a card, no semantic meaning */
+    .coffee-card {
+      background: #fafafa;
+      border: 1px solid #eee;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .coffee-card-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #444;
+      margin-bottom: 8px;
+    }
+
+    /* ISSUE 7: Very light text, ~2:1 contrast */
+    .coffee-card-price {
+      color: #bbbbbb;
+      font-size: 14px;
+    }
+
+    .coffee-card-desc {
+      color: #aaaaaa;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+
+    .about-section {
+      background: #f5f5f5;
+      padding: 60px 20px;
+      text-align: center;
+    }
+
+    .about-section p {
+      /* ISSUE 7: Low contrast body text */
+      color: #aaaaaa;
+      max-width: 600px;
+      margin: 0 auto;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    .contact-section {
+      padding: 60px 20px;
+      text-align: center;
+    }
+
+    .contact-btn {
+      background: #333;
+      color: white;
+      padding: 12px 28px;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+
+    footer {
+      background: #222;
+      color: #888;
+      text-align: center;
+      padding: 30px 20px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ISSUE 8: No skip link, no <header>, no <nav>, no <main> landmarks -->
+  <!-- ISSUE 6: div-based nav — not keyboard accessible, no ARIA roles -->
+  <div class="top-nav">
+    <div class="nav-logo">BlueMorning Coffee</div>
+    <div class="nav-items">
+      <!-- ISSUE: onclick on div — not focusable by keyboard, no role="button" -->
+      <div onclick="window.location.href='#menu'">Menu</div>
+      <div onclick="window.location.href='#about'">About</div>
+      <div onclick="window.location.href='#contact'">Contact</div>
+    </div>
+  </div>
+
+  <div class="hero-section">
+    <!-- ISSUE 4: No width, no height, no loading, no fetchpriority, no alt.
+         The browser has no reserved space, causing layout shift when image loads.
+         Image served as large PNG with no compression or modern format. -->
+    <img
+      src="https://placehold.co/1200x630/E2E8F0/94A3B8?text=BlueMorning+Coffee"
+      class="hero-img">
+
+    <!-- ISSUE 7: Low contrast — #aaaaaa on white is 2.32:1 ratio (fails WCAG AA) -->
+    <div class="hero-tagline">Your neighborhood coffee experience</div>
+    <div class="hero-sub">Est. 2019 &bull; Downtown Location &bull; Open Daily</div>
+    <button class="contact-btn" onclick="window.location.href='#contact'">
+      Find Us
+    </button>
+  </div>
+
+  <!-- ISSUE 8: Plain <div> instead of <main>, no landmark structure -->
+  <div class="container" style="max-width:1100px; margin:0 auto; padding:0 20px;">
+
+    <div id="menu">
+      <div class="section-title">Our Menu</div>
+
+      <!-- ISSUE: No <ul>/<li> for a list of items — divs with no semantic meaning -->
+      <div class="row">
+        <div class="col-md-4">
+          <div class="coffee-card">
+            <!-- ISSUE: div pretending to be a heading — not in heading hierarchy -->
+            <div class="coffee-card-title">Signature Pour-Over</div>
+            <div class="coffee-card-price">$6.50</div>
+            <!-- ISSUE 5: Image with no dimensions, no lazy loading -->
+            <img src="https://placehold.co/400x250/F1F5F9/94A3B8?text=Pour+Over" style="width:100%; margin:10px 0;">
+            <div class="coffee-card-desc">
+              Single-origin beans, slow-drip perfection. Bright and complex.
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="coffee-card">
+            <div class="coffee-card-title">Oat Milk Latte</div>
+            <div class="coffee-card-price">$7.00</div>
+            <!-- ISSUE 5: No width/height, no loading="lazy", no alt -->
+            <img src="https://placehold.co/400x250/F1F5F9/94A3B8?text=Oat+Latte" style="width:100%; margin:10px 0;">
+            <div class="coffee-card-desc">
+              Velvety steamed oat milk with our house espresso blend.
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="coffee-card">
+            <div class="coffee-card-title">Cold Brew</div>
+            <div class="coffee-card-price">$5.50</div>
+            <!-- ISSUE 5: No width/height, no loading="lazy", no alt -->
+            <img src="https://placehold.co/400x250/F1F5F9/94A3B8?text=Cold+Brew" style="width:100%; margin:10px 0;">
+            <div class="coffee-card-desc">
+              Steeped for 18 hours. Smooth, low-acid, and refreshing.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:16px;">
+        <div class="col-md-4">
+          <div class="coffee-card">
+            <div class="coffee-card-title">Cortado</div>
+            <div class="coffee-card-price">$5.00</div>
+            <img src="https://placehold.co/400x250/F1F5F9/94A3B8?text=Cortado" style="width:100%; margin:10px 0;">
+            <div class="coffee-card-desc">
+              Equal parts espresso and warm milk. Bold and balanced.
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="coffee-card">
+            <div class="coffee-card-title">Matcha Latte</div>
+            <div class="coffee-card-price">$6.00</div>
+            <img src="https://placehold.co/400x250/F1F5F9/94A3B8?text=Matcha" style="width:100%; margin:10px 0;">
+            <div class="coffee-card-desc">
+              Ceremonial grade matcha with steamed oat or whole milk.
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="coffee-card">
+            <div class="coffee-card-title">Seasonal Special</div>
+            <div class="coffee-card-price">$7.50</div>
+            <img src="https://placehold.co/400x250/F1F5F9/94A3B8?text=Seasonal" style="width:100%; margin:10px 0;">
+            <div class="coffee-card-desc">
+              Ask your barista what's on the board today.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="about" class="about-section">
+    <div class="section-title">Our Story</div>
+    <!-- ISSUE: No <img> alt attribute on a content image -->
+    <img src="https://placehold.co/800x400/E2E8F0/94A3B8?text=Our+Story" style="width:100%; max-width:700px; margin:0 auto 24px; display:block;">
+    <!-- ISSUE 7: Low contrast body text (#aaa on #f5f5f5 ≈ 2.2:1) -->
+    <p>
+      BlueMorning Coffee opened in 2019 with a simple idea: great coffee deserves
+      great company. We source directly from farms in Ethiopia, Colombia, and Guatemala,
+      and roast in small batches weekly. Every cup is made with intention.
+    </p>
+  </div>
+
+  <div id="contact" class="contact-section">
+    <div class="section-title">Find Us</div>
+    <p style="color:#aaa;">123 Main Street, Downtown &bull; Open Mon&ndash;Fri 7am&ndash;7pm &bull; Sat&ndash;Sun 8am&ndash;6pm</p>
+    <!-- ISSUE: No <form> for the contact form — just styled divs -->
+    <div style="max-width:400px; margin:24px auto 0; text-align:left;">
+      <!-- ISSUE: <input> with no associated <label> — inaccessible -->
+      <input type="text" placeholder="Your name" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ddd;">
+      <input type="email" placeholder="Email address" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ddd;">
+      <textarea placeholder="Message" style="width:100%; padding:10px; height:100px; border:1px solid #ddd;"></textarea>
+      <button class="contact-btn" style="width:100%; margin-top:10px;">Send Message</button>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2024 BlueMorning Coffee &bull; All rights reserved</p>
+    <!-- ISSUE: No <nav> in footer, links as plain text onclick -->
+    <div style="margin-top:12px;">
+      <span onclick="window.location.href='#menu'" style="cursor:pointer; margin:0 8px; color:#888;">Menu</span>
+      <span onclick="window.location.href='#about'" style="cursor:pointer; margin:0 8px; color:#888;">About</span>
+      <span onclick="window.location.href='#contact'" style="cursor:pointer; margin:0 8px; color:#888;">Contact</span>
+    </div>
+  </footer>
+
+  <!-- ISSUE 3: Even more jQuery-powered DOM operations that vanilla JS would handle -->
+  <script>
+    // Loading 90KB of jQuery to power hover colour changes.
+    // This is what CSS :hover exists for.
+    $(document).ready(function () {
+      $('.nav-items div').hover(
+        function () { $(this).css('color', '#0066cc'); },
+        function () { $(this).css('color', '#aaaaaa'); }
+      );
+
+      // Also using jQuery for a scroll animation that IntersectionObserver would handle
+      $(window).on('scroll', function () {
+        var scrollTop = $(window).scrollTop();
+        if (scrollTop > 200) {
+          $('.top-nav').css('box-shadow', '0 2px 8px rgba(0,0,0,0.1)');
+        } else {
+          $('.top-nav').css('box-shadow', 'none');
+        }
+      });
+    });
+  </script>
+
+  <!-- ISSUE: Bootstrap JS also loaded — adds another 80KB+ of unused JavaScript -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="A real-world web performance case study: how I took a local business site from Lighthouse 23 to 98 by eliminating render-blocking resources, fixing layout shift, and cutting page weight by 95%.">
+  <meta name="theme-color" content="#060B18">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="BlueMorning Coffee — Web Performance Case Study">
+  <meta property="og:description" content="Lighthouse 23 → 98. A deep-dive into eliminating render-blocking resources, fixing CLS, and cutting page weight by 95%.">
+  <meta property="og:type" content="article">
+
+  <title>BlueMorning Coffee — Web Performance Case Study</title>
+
+  <!-- SVG Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/assets/images/favicon.svg">
+
+  <!-- Google Fonts: preconnect first, then non-blocking load -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        media="print"
+        onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+  </noscript>
+
+  <!-- Main stylesheet -->
+  <link rel="stylesheet" href="/assets/css/styles.css">
+
+  <!-- Deferred JS -->
+  <script defer src="/assets/js/main.js"></script>
+</head>
+<body>
+
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
+  <!-- ─── Header ─────────────────────────────────────────────────────────── -->
+  <header class="site-header" role="banner">
+    <nav class="nav-container" aria-label="Primary navigation">
+      <a class="nav-brand" href="/" aria-label="BlueMorning Coffee Performance Case Study — home">
+        <!-- Inline SVG gauge icon, aria-hidden since brand text follows -->
+        <svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true" focusable="false">
+          <path d="M 6.5 22 A 11 11 0 1 1 25.5 22" stroke="#F5A623" stroke-width="3" stroke-linecap="round"/>
+          <line x1="7" y1="14" x2="9" y2="15.2" stroke="#F5A623" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="16" y1="5" x2="16" y2="7.5" stroke="#F5A623" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="25" y1="14" x2="23" y2="15.2" stroke="#F5A623" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="16" y1="19" x2="22" y2="10" stroke="#F5A623" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="16" cy="19" r="2.5" fill="#F5A623"/>
+        </svg>
+        <span>PerfStudy</span>
+      </a>
+
+      <ul class="nav-links" id="nav-menu" role="list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#findings">Findings</a></li>
+        <li><a href="#optimizations">Optimizations</a></li>
+        <li><a href="#results">Results</a></li>
+        <li><a href="#try-it">Try It</a></li>
+      </ul>
+
+      <button
+        type="button"
+        class="nav-toggle"
+        aria-expanded="false"
+        aria-controls="nav-menu"
+        aria-label="Open navigation menu">
+        <span class="hamburger-bar" aria-hidden="true"></span>
+        <span class="hamburger-bar" aria-hidden="true"></span>
+        <span class="hamburger-bar" aria-hidden="true"></span>
+      </button>
+    </nav>
+  </header>
+
+  <!-- ─── Main Content ────────────────────────────────────────────────────── -->
+  <main id="main-content">
+
+    <!-- ── Hero ─────────────────────────────────────────────────────────── -->
+    <section class="hero" aria-labelledby="hero-heading">
+      <div class="hero-content">
+        <p class="hero-eyebrow">Web Performance Case Study</p>
+        <h1 id="hero-heading">BlueMorning Coffee</h1>
+        <p class="hero-subhead">
+          Lighthouse Performance:
+          <span class="score-bad" aria-label="Before score: 23">23</span>
+          &rarr;
+          <span class="score-good" aria-label="After score: 98">98</span>
+        </p>
+        <p class="hero-description">
+          A deep-dive into eliminating render-blocking resources, fixing cumulative layout shift,
+          and cutting page weight by 95%&nbsp;&mdash;&nbsp;without touching the design.
+        </p>
+        <div class="hero-ctas" role="group" aria-label="Demo pages">
+          <a href="/before/" class="btn btn-secondary" target="_blank" rel="noopener">
+            View Before Demo
+          </a>
+          <a href="/after/" class="btn btn-primary" target="_blank" rel="noopener">
+            View After Demo
+          </a>
+        </div>
+      </div>
+
+      <!-- Decorative — hidden from AT via aria-hidden; AT gets the info from the score spans above -->
+      <div class="hero-score-delta" aria-hidden="true">
+        <span class="delta-number" data-target="70">0</span>
+        <span class="delta-label">points gained</span>
+      </div>
+    </section>
+
+    <!-- ── Project Overview ──────────────────────────────────────────────── -->
+    <section id="overview" class="section section-alt" aria-labelledby="overview-heading">
+      <div class="container">
+        <h2 id="overview-heading" class="section-heading">Project Overview</h2>
+        <p class="section-subhead">A fictional independent coffee shop — real anti-patterns, measurable results.</p>
+        <div class="overview-grid">
+
+          <article class="overview-card scroll-reveal" aria-labelledby="overview-business">
+            <h3 id="overview-business">The Business</h3>
+            <p>
+              BlueMorning Coffee is a fictional independent coffee shop that recently relaunched their website
+              with a new design. Despite a clean visual refresh, visitors on mobile were abandoning the page
+              before it finished loading. Bounce rate had climbed to 74% on 4G connections.
+            </p>
+          </article>
+
+          <article class="overview-card scroll-reveal" aria-labelledby="overview-problem">
+            <h3 id="overview-problem">The Problem</h3>
+            <p>
+              An initial Chrome DevTools audit revealed a Lighthouse Performance score of 23, an
+              LCP of 8.4 seconds, and a CLS score of 0.34. The root causes: a 4.2MB hero image,
+              two render-blocking resources in <code>&lt;head&gt;</code>, and a full Bootstrap
+              installation with 94% of its CSS unused.
+            </p>
+          </article>
+
+          <article class="overview-card scroll-reveal" aria-labelledby="overview-tools">
+            <h3 id="overview-tools">Tools Used</h3>
+            <ul role="list">
+              <li>Chrome DevTools &mdash; Performance tab, Network throttling</li>
+              <li>PageSpeed Insights &mdash; Lab + field (CrUX) data</li>
+              <li>Squoosh &mdash; Image compression (PNG&thinsp;&rarr;&thinsp;WebP)</li>
+              <li>WebPageTest &mdash; Waterfall analysis, filmstrip view</li>
+            </ul>
+          </article>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Audit Findings ────────────────────────────────────────────────── -->
+    <section id="findings" class="section" aria-labelledby="findings-heading">
+      <div class="container">
+        <h2 id="findings-heading" class="section-heading">Audit Findings</h2>
+        <p class="section-subhead">8 issues identified across performance, accessibility, and best practices.</p>
+
+        <ol class="findings-list" role="list">
+
+          <li class="finding-item scroll-reveal" aria-labelledby="finding-1-title">
+            <header class="finding-header">
+              <span class="severity-badge" data-severity="critical" aria-label="Severity: Critical">Critical</span>
+              <h3 id="finding-1-title">Uncompressed 4.2MB Hero Image</h3>
+            </header>
+            <p>
+              The hero image was served as a PNG at 4.2MB &mdash; 72% of total page weight. Squoosh analysis
+              showed a 96% reduction was available via WebP at quality 80. This single asset was
+              the primary driver of the 8.4s LCP.
+            </p>
+          </li>
+
+          <li class="finding-item scroll-reveal" aria-labelledby="finding-2-title">
+            <header class="finding-header">
+              <span class="severity-badge" data-severity="critical" aria-label="Severity: Critical">Critical</span>
+              <h3 id="finding-2-title">No Image Dimensions &mdash; CLS Score of 0.34</h3>
+            </header>
+            <p>
+              Every <code>&lt;img&gt;</code> element lacked explicit <code>width</code> and
+              <code>height</code> attributes. The browser had no reserved space before images
+              loaded, causing massive layout shift (CLS 0.34, threshold for "poor" is 0.25).
+            </p>
+          </li>
+
+          <li class="finding-item scroll-reveal" aria-labelledby="finding-3-title">
+            <header class="finding-header">
+              <span class="severity-badge" data-severity="major" aria-label="Severity: Major">Major</span>
+              <h3 id="finding-3-title">LCP Image Not Preloaded</h3>
+            </header>
+            <p>
+              The browser discovered the hero image only after parsing the HTML and CSS. Without a
+              <code>&lt;link rel="preload"&gt;</code> hint, the image sat in the discovery queue
+              behind stylesheets and scripts, adding ~1.2s of unnecessary delay.
+            </p>
+          </li>
+
+          <li class="finding-item scroll-reveal" aria-labelledby="finding-4-title">
+            <header class="finding-header">
+              <span class="severity-badge" data-severity="critical" aria-label="Severity: Critical">Critical</span>
+              <h3 id="finding-4-title">Render-Blocking Google Fonts via CSS @import</h3>
+            </header>
+            <p>
+              Fonts were loaded with <code>@import url('https://fonts.googleapis.com/...')</code>
+              inside an inline <code>&lt;style&gt;</code> block. This forces a synchronous
+              network round-trip before the browser can begin rendering &mdash; the single
+              worst way to load web fonts.
+            </p>
+          </li>
+
+          <li class="finding-item scroll-reveal" aria-labelledby="finding-5-title">
+            <header class="finding-header">
+              <span class="severity-badge" data-severity="major" aria-label="Severity: Major">Major</span>
+              <h3 id="finding-5-title">Synchronous jQuery in &lt;head&gt;</h3>
+            </header>
+            <p>
+              A 90KB jQuery script was loaded synchronously in <code>&lt;head&gt;</code>
+              with no <code>defer</code> or <code>async</code> attribute. HTML parsing
+              halts completely until this script downloads, parses, and executes &mdash;
+              a practice that has been discouraged since 2010.
+            </p>
+          </li>
+
+          <li class="finding-item scroll-reveal" aria-labelledby="finding-6-title">
+            <header class="finding-header">
+              <span class="severity-badge" data-severity="critical" aria-label="Severity: Critical">Critical</span>
+              <h3 id="finding-6-title">No Critical CSS Inlining</h3>
+            </header>
+            <p>
+              All styles were loaded via an external stylesheet &mdash; meaning the browser
+              couldn't render the above-fold content until the full CSS file downloaded.
+              Inlining the ~1.5KB of above-fold styles eliminates this render-blocking delay
+              entirely.
+            </p>
+          </li>
+
+          <li class="finding-item scroll-reveal" aria-labelledby="finding-7-title">
+            <header class="finding-header">
+              <span class="severity-badge" data-severity="major" aria-label="Severity: Major">Major</span>
+              <h3 id="finding-7-title">Bootstrap 5 Loaded Entirely (94% Unused)</h3>
+            </header>
+            <p>
+              The full Bootstrap 5 stylesheet (minified: 189KB, gzipped: ~24KB) was loaded for
+              a site using fewer than 15 of its components. A coverage audit in Chrome DevTools
+              showed 94% of the CSS was never applied.
+            </p>
+          </li>
+
+          <li class="finding-item scroll-reveal" aria-labelledby="finding-8-title">
+            <header class="finding-header">
+              <span class="severity-badge" data-severity="minor" aria-label="Severity: Minor">Minor</span>
+              <h3 id="finding-8-title">No Resource Hints or Cache Headers</h3>
+            </header>
+            <p>
+              No <code>preconnect</code> or <code>dns-prefetch</code> hints were set for
+              third-party origins. Netlify's default cache headers were left untouched,
+              meaning static assets had no long-lived caching &mdash; repeat visitors paid
+              the full download cost every time.
+            </p>
+          </li>
+
+        </ol>
+      </div>
+    </section>
+
+    <!-- ── Optimizations ─────────────────────────────────────────────────── -->
+    <section id="optimizations" class="section section-alt" aria-labelledby="optimizations-heading">
+      <div class="container">
+        <h2 id="optimizations-heading" class="section-heading">What Was Fixed</h2>
+        <p class="section-subhead">Eight targeted changes. Each one measured before it was shipped.</p>
+
+        <div class="optimizations-list">
+
+          <!-- Optimization 1 -->
+          <article class="optimization-card scroll-reveal" aria-labelledby="opt-1-title">
+            <div class="opt-header">
+              <span class="opt-number" aria-hidden="true">01</span>
+              <h3 id="opt-1-title">Image Format &amp; Compression</h3>
+              <span class="opt-impact" aria-label="Impact: 4.2MB reduced to 180KB">4.2MB &rarr; 180KB</span>
+            </div>
+            <div class="opt-body">
+              <div class="opt-problem">
+                <p class="opt-label opt-label--bad">Before</p>
+                <p>Hero served as an unoptimized PNG at full camera resolution. No compression,
+                no modern format, no size constraints applied.</p>
+              </div>
+              <div class="opt-solution">
+                <p class="opt-label opt-label--good">After</p>
+                <p>Converted to WebP at quality&nbsp;80 using Squoosh. A <code>&lt;picture&gt;</code>
+                element provides a JPEG fallback for older browsers.</p>
+              </div>
+            </div>
+            <div class="code-diff" role="region" aria-label="Code comparison: image format">
+              <div class="diff-block diff-block--bad">
+                <p class="diff-label">Before</p>
+                <pre><code>&lt;img src="hero.jpg"&gt;</code></pre>
+              </div>
+              <div class="diff-block diff-block--good">
+                <p class="diff-label">After</p>
+                <pre><code>&lt;picture&gt;
+  &lt;source srcset="hero.webp"
+          type="image/webp"&gt;
+  &lt;img src="hero.jpg"
+       width="1200" height="630"
+       fetchpriority="high"
+       loading="eager"
+       alt="Barista pouring latte art"&gt;
+&lt;/picture&gt;</code></pre>
+              </div>
+            </div>
+          </article>
+
+          <!-- Optimization 2 -->
+          <article class="optimization-card scroll-reveal" aria-labelledby="opt-2-title">
+            <div class="opt-header">
+              <span class="opt-number" aria-hidden="true">02</span>
+              <h3 id="opt-2-title">Explicit Image Dimensions &amp; Lazy Loading</h3>
+              <span class="opt-impact" aria-label="Impact: CLS 0.34 to 0.01">CLS 0.34 &rarr; 0.01</span>
+            </div>
+            <div class="opt-body">
+              <div class="opt-problem">
+                <p class="opt-label opt-label--bad">Before</p>
+                <p>Images had no <code>width</code>/<code>height</code> attributes. The browser
+                reserved zero space, so the layout shifted dramatically as each image loaded.</p>
+              </div>
+              <div class="opt-solution">
+                <p class="opt-label opt-label--good">After</p>
+                <p>All images got explicit dimensions matching their intrinsic aspect ratio, and
+                below-fold images received <code>loading="lazy"</code> to defer their fetch.</p>
+              </div>
+            </div>
+            <div class="code-diff" role="region" aria-label="Code comparison: image dimensions">
+              <div class="diff-block diff-block--bad">
+                <p class="diff-label">Before</p>
+                <pre><code>&lt;img src="feature.jpg"&gt;
+
+&lt;img src="team.jpg"&gt;</code></pre>
+              </div>
+              <div class="diff-block diff-block--good">
+                <p class="diff-label">After</p>
+                <pre><code>&lt;img src="feature.webp"
+     width="800" height="450"
+     loading="lazy"
+     alt="Our signature pour-over"&gt;
+&lt;img src="team.webp"
+     width="600" height="400"
+     loading="lazy"
+     alt="The BlueMorning team"&gt;</code></pre>
+              </div>
+            </div>
+          </article>
+
+          <!-- Optimization 3 -->
+          <article class="optimization-card scroll-reveal" aria-labelledby="opt-3-title">
+            <div class="opt-header">
+              <span class="opt-number" aria-hidden="true">03</span>
+              <h3 id="opt-3-title">LCP Image Preload</h3>
+              <span class="opt-impact" aria-label="Impact: LCP improved to 0.9 seconds">LCP 8.4s &rarr; 0.9s (contributed)</span>
+            </div>
+            <div class="opt-body">
+              <div class="opt-problem">
+                <p class="opt-label opt-label--bad">Before</p>
+                <p>The browser discovered the hero image only after parsing HTML and CSSOM.
+                It sat in the network queue behind two render-blocking resources.</p>
+              </div>
+              <div class="opt-solution">
+                <p class="opt-label opt-label--good">After</p>
+                <p>A <code>&lt;link rel="preload"&gt;</code> tag with <code>fetchpriority="high"</code>
+                in <code>&lt;head&gt;</code> tells the browser to fetch the hero image at the
+                highest possible priority, in parallel with other critical resources.</p>
+              </div>
+            </div>
+            <div class="code-diff" role="region" aria-label="Code comparison: LCP preload">
+              <div class="diff-block diff-block--bad">
+                <p class="diff-label">Before</p>
+                <pre><code>&lt;!-- No preload hint --&gt;
+&lt;!-- Hero discovered only
+     after CSS parses --&gt;</code></pre>
+              </div>
+              <div class="diff-block diff-block--good">
+                <p class="diff-label">After</p>
+                <pre><code>&lt;!-- In &lt;head&gt;, before stylesheets --&gt;
+&lt;link rel="preload"
+      as="image"
+      href="hero.webp"
+      type="image/webp"
+      fetchpriority="high"&gt;</code></pre>
+              </div>
+            </div>
+          </article>
+
+          <!-- Optimization 4 -->
+          <article class="optimization-card scroll-reveal" aria-labelledby="opt-4-title">
+            <div class="opt-header">
+              <span class="opt-number" aria-hidden="true">04</span>
+              <h3 id="opt-4-title">Non-Blocking Font Loading</h3>
+              <span class="opt-impact" aria-label="Impact: Render-blocking resource eliminated">Render-blocking removed</span>
+            </div>
+            <div class="opt-body">
+              <div class="opt-problem">
+                <p class="opt-label opt-label--bad">Before</p>
+                <p>Fonts were loaded via <code>@import</code> inside a <code>&lt;style&gt;</code>
+                block. This triggers a synchronous HTTP request that prevents rendering entirely.</p>
+              </div>
+              <div class="opt-solution">
+                <p class="opt-label opt-label--good">After</p>
+                <p>Replaced with <code>preconnect</code> hints and a <code>&lt;link&gt;</code>
+                that loads as print then swaps to all media &mdash; fonts load in parallel without
+                blocking the parser.</p>
+              </div>
+            </div>
+            <div class="code-diff" role="region" aria-label="Code comparison: font loading">
+              <div class="diff-block diff-block--bad">
+                <p class="diff-label">Before</p>
+                <pre><code>&lt;style&gt;
+  @import url(
+    'https://fonts.googleapis.com
+     /css2?family=Inter'
+  );
+&lt;/style&gt;</code></pre>
+              </div>
+              <div class="diff-block diff-block--good">
+                <p class="diff-label">After</p>
+                <pre><code>&lt;link rel="preconnect"
+      href="https://fonts.googleapis.com"&gt;
+&lt;link rel="preconnect"
+      href="https://fonts.gstatic.com"
+      crossorigin&gt;
+&lt;link rel="stylesheet"
+      href="https://fonts.googleapis.com/
+            css2?family=Inter&display=swap"
+      media="print"
+      onload="this.media='all'"&gt;
+&lt;noscript&gt;
+  &lt;link rel="stylesheet" href="..."&gt;
+&lt;/noscript&gt;</code></pre>
+              </div>
+            </div>
+          </article>
+
+          <!-- Optimization 5 -->
+          <article class="optimization-card scroll-reveal" aria-labelledby="opt-5-title">
+            <div class="opt-header">
+              <span class="opt-number" aria-hidden="true">05</span>
+              <h3 id="opt-5-title">Deferred Vanilla JS &mdash; Remove jQuery</h3>
+              <span class="opt-impact" aria-label="Impact: 90KB blocking script eliminated">90KB &rarr; 0.8KB</span>
+            </div>
+            <div class="opt-body">
+              <div class="opt-problem">
+                <p class="opt-label opt-label--bad">Before</p>
+                <p>jQuery 3.7.1 (90KB minified) was loaded synchronously in <code>&lt;head&gt;</code>
+                to power a basic nav hover effect. The entire HTML parse halted until
+                the library downloaded and executed.</p>
+              </div>
+              <div class="opt-solution">
+                <p class="opt-label opt-label--good">After</p>
+                <p>Replaced with 3 lines of vanilla JS loaded with <code>defer</code>.
+                It runs after parsing completes and never blocks the main thread.</p>
+              </div>
+            </div>
+            <div class="code-diff" role="region" aria-label="Code comparison: JavaScript">
+              <div class="diff-block diff-block--bad">
+                <p class="diff-label">Before</p>
+                <pre><code>&lt;!-- In &lt;head&gt;, blocking --&gt;
+&lt;script src="jquery.min.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  $(document).ready(function() {
+    $('.nav-item').hover(
+      function() {
+        $(this).css('color','#06c');
+      },
+      function() {
+        $(this).css('color', '');
+      }
+    );
+  });
+&lt;/script&gt;</code></pre>
+              </div>
+              <div class="diff-block diff-block--good">
+                <p class="diff-label">After</p>
+                <pre><code>&lt;!-- Before &lt;/body&gt;, non-blocking --&gt;
+&lt;script defer src="app.js"&gt;&lt;/script&gt;
+
+// app.js (3 lines, no jQuery)
+document.querySelectorAll('nav a')
+  .forEach(el =&gt; {
+    el.addEventListener('mouseenter',
+      () =&gt; el.style.color = '#06c');
+    el.addEventListener('mouseleave',
+      () =&gt; el.style.removeProperty(
+        'color'));
+  });</code></pre>
+              </div>
+            </div>
+          </article>
+
+          <!-- Optimization 6 -->
+          <article class="optimization-card scroll-reveal" aria-labelledby="opt-6-title">
+            <div class="opt-header">
+              <span class="opt-number" aria-hidden="true">06</span>
+              <h3 id="opt-6-title">Critical CSS Inlining</h3>
+              <span class="opt-impact" aria-label="Impact: Above-fold render unblocked">First paint unblocked</span>
+            </div>
+            <div class="opt-body">
+              <div class="opt-problem">
+                <p class="opt-label opt-label--bad">Before</p>
+                <p>All CSS lived in an external file. The browser blocked rendering until
+                the entire file was downloaded and parsed, even for styles applied only to
+                below-fold content.</p>
+              </div>
+              <div class="opt-solution">
+                <p class="opt-label opt-label--good">After</p>
+                <p>~1.5KB of above-fold styles inlined in a <code>&lt;style&gt;</code> tag.
+                The remaining stylesheet loads non-blocking via the print/onload trick.</p>
+              </div>
+            </div>
+            <div class="code-diff" role="region" aria-label="Code comparison: critical CSS">
+              <div class="diff-block diff-block--bad">
+                <p class="diff-label">Before</p>
+                <pre><code>&lt;!-- Blocks rendering until downloaded --&gt;
+&lt;link rel="stylesheet"
+      href="styles.css"&gt;</code></pre>
+              </div>
+              <div class="diff-block diff-block--good">
+                <p class="diff-label">After</p>
+                <pre><code>&lt;!-- Critical above-fold CSS: inline --&gt;
+&lt;style&gt;
+  /* ~1.5KB of header, hero styles */
+  body { margin: 0; font-family: ... }
+  .hero { min-height: 60vh; ... }
+&lt;/style&gt;
+
+&lt;!-- Rest: non-blocking --&gt;
+&lt;link rel="stylesheet"
+      href="styles.css"
+      media="print"
+      onload="this.media='all'"&gt;</code></pre>
+              </div>
+            </div>
+          </article>
+
+          <!-- Optimization 7 -->
+          <article class="optimization-card scroll-reveal" aria-labelledby="opt-7-title">
+            <div class="opt-header">
+              <span class="opt-number" aria-hidden="true">07</span>
+              <h3 id="opt-7-title">Unused CSS Removal</h3>
+              <span class="opt-impact" aria-label="Impact: 94KB of unused CSS removed">94KB saved</span>
+            </div>
+            <div class="opt-body">
+              <div class="opt-problem">
+                <p class="opt-label opt-label--bad">Before</p>
+                <p>The full Bootstrap 5 stylesheet was imported. Chrome DevTools' Coverage
+                tab showed 94% of its rules were never matched against any element on the page.</p>
+              </div>
+              <div class="opt-solution">
+                <p class="opt-label opt-label--good">After</p>
+                <p>Bootstrap removed entirely. A custom stylesheet of 3.2KB covers all needed
+                styles. Zero unused rules, verified with DevTools Coverage post-launch.</p>
+              </div>
+            </div>
+            <div class="code-diff" role="region" aria-label="Code comparison: CSS removal">
+              <div class="diff-block diff-block--bad">
+                <p class="diff-label">Before</p>
+                <pre><code>&lt;!-- 189KB uncompressed, ~24KB gzipped --&gt;
+&lt;link rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/
+  bootstrap@5.3.2/dist/css/
+  bootstrap.min.css"&gt;</code></pre>
+              </div>
+              <div class="diff-block diff-block--good">
+                <p class="diff-label">After</p>
+                <pre><code>&lt;!-- 3.2KB custom, 100% used --&gt;
+&lt;style&gt;
+  /* Critical above-fold only */
+&lt;/style&gt;
+&lt;link rel="stylesheet"
+      href="styles.css"
+      media="print"
+      onload="this.media='all'"&gt;
+&lt;!-- styles.css: 3.2KB total --&gt;</code></pre>
+              </div>
+            </div>
+          </article>
+
+          <!-- Optimization 8 -->
+          <article class="optimization-card scroll-reveal" aria-labelledby="opt-8-title">
+            <div class="opt-header">
+              <span class="opt-number" aria-hidden="true">08</span>
+              <h3 id="opt-8-title">Resource Hints &amp; Cache Headers</h3>
+              <span class="opt-impact" aria-label="Impact: Repeat visit load cut by 90%">Repeat visits: −90%</span>
+            </div>
+            <div class="opt-body">
+              <div class="opt-problem">
+                <p class="opt-label opt-label--bad">Before</p>
+                <p>No <code>preconnect</code> hints for third-party origins. Netlify's default
+                <code>Cache-Control: no-cache</code> meant returning visitors re-downloaded
+                every asset on every visit.</p>
+              </div>
+              <div class="opt-solution">
+                <p class="opt-label opt-label--good">After</p>
+                <p><code>preconnect</code> hints added for Google Fonts. <code>netlify.toml</code>
+                configured to serve static assets with <code>max-age=31536000, immutable</code>
+                &mdash; one-year cache for fonts, CSS, and JS.</p>
+              </div>
+            </div>
+            <div class="code-diff" role="region" aria-label="Code comparison: cache headers">
+              <div class="diff-block diff-block--bad">
+                <p class="diff-label">Before</p>
+                <pre><code>&lt;!-- No preconnect hints --&gt;
+
+# No netlify.toml
+# Default: Cache-Control: no-cache</code></pre>
+              </div>
+              <div class="diff-block diff-block--good">
+                <p class="diff-label">After</p>
+                <pre><code>&lt;link rel="preconnect"
+      href="https://fonts.googleapis.com"&gt;
+
+# netlify.toml
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public,
+      max-age=31536000, immutable"</code></pre>
+              </div>
+            </div>
+          </article>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Results: Lighthouse Gauges ────────────────────────────────────── -->
+    <section id="results" class="section" aria-labelledby="results-heading">
+      <div class="container">
+        <h2 id="results-heading" class="section-heading">Lighthouse Results</h2>
+        <p class="section-subhead">Tested with Chrome Lighthouse in Incognito, throttled to simulated 4G mobile.</p>
+
+        <div class="results-columns">
+
+          <!-- Before column -->
+          <div class="results-col results-col--bad scroll-reveal">
+            <h3>Before</h3>
+            <div class="gauges-grid">
+
+              <figure class="gauge-figure">
+                <svg class="gauge-svg" viewBox="0 0 120 120" role="img"
+                     aria-label="Performance score before: 23 out of 100">
+                  <circle class="gauge-track" cx="60" cy="60" r="50"/>
+                  <circle class="gauge-arc gauge-arc--bad" cx="60" cy="60" r="50"
+                          data-score="23"
+                          stroke-dasharray="314.16"
+                          stroke-dashoffset="314.16"/>
+                </svg>
+                <figcaption aria-hidden="true">
+                  <span class="gauge-score" data-target="23" style="color:var(--color-bad)">0</span>
+                  <span class="gauge-label">Performance</span>
+                </figcaption>
+              </figure>
+
+              <figure class="gauge-figure">
+                <svg class="gauge-svg" viewBox="0 0 120 120" role="img"
+                     aria-label="Accessibility score before: 68 out of 100">
+                  <circle class="gauge-track" cx="60" cy="60" r="50"/>
+                  <circle class="gauge-arc gauge-arc--medium" cx="60" cy="60" r="50"
+                          data-score="68"
+                          stroke-dasharray="314.16"
+                          stroke-dashoffset="314.16"/>
+                </svg>
+                <figcaption aria-hidden="true">
+                  <span class="gauge-score" data-target="68" style="color:var(--color-medium)">0</span>
+                  <span class="gauge-label">Accessibility</span>
+                </figcaption>
+              </figure>
+
+              <figure class="gauge-figure">
+                <svg class="gauge-svg" viewBox="0 0 120 120" role="img"
+                     aria-label="Best Practices score before: 50 out of 100">
+                  <circle class="gauge-track" cx="60" cy="60" r="50"/>
+                  <circle class="gauge-arc gauge-arc--bad" cx="60" cy="60" r="50"
+                          data-score="50"
+                          stroke-dasharray="314.16"
+                          stroke-dashoffset="314.16"/>
+                </svg>
+                <figcaption aria-hidden="true">
+                  <span class="gauge-score" data-target="50" style="color:var(--color-bad)">0</span>
+                  <span class="gauge-label">Best Practices</span>
+                </figcaption>
+              </figure>
+
+              <figure class="gauge-figure">
+                <svg class="gauge-svg" viewBox="0 0 120 120" role="img"
+                     aria-label="SEO score before: 67 out of 100">
+                  <circle class="gauge-track" cx="60" cy="60" r="50"/>
+                  <circle class="gauge-arc gauge-arc--medium" cx="60" cy="60" r="50"
+                          data-score="67"
+                          stroke-dasharray="314.16"
+                          stroke-dashoffset="314.16"/>
+                </svg>
+                <figcaption aria-hidden="true">
+                  <span class="gauge-score" data-target="67" style="color:var(--color-medium)">0</span>
+                  <span class="gauge-label">SEO</span>
+                </figcaption>
+              </figure>
+
+            </div>
+          </div>
+
+          <!-- After column -->
+          <div class="results-col results-col--good scroll-reveal">
+            <h3>After</h3>
+            <div class="gauges-grid">
+
+              <figure class="gauge-figure">
+                <svg class="gauge-svg" viewBox="0 0 120 120" role="img"
+                     aria-label="Performance score after: 98 out of 100">
+                  <circle class="gauge-track" cx="60" cy="60" r="50"/>
+                  <circle class="gauge-arc gauge-arc--good" cx="60" cy="60" r="50"
+                          data-score="98"
+                          stroke-dasharray="314.16"
+                          stroke-dashoffset="314.16"/>
+                </svg>
+                <figcaption aria-hidden="true">
+                  <span class="gauge-score" data-target="98" style="color:var(--color-good)">0</span>
+                  <span class="gauge-label">Performance</span>
+                </figcaption>
+              </figure>
+
+              <figure class="gauge-figure">
+                <svg class="gauge-svg" viewBox="0 0 120 120" role="img"
+                     aria-label="Accessibility score after: 100 out of 100">
+                  <circle class="gauge-track" cx="60" cy="60" r="50"/>
+                  <circle class="gauge-arc gauge-arc--good" cx="60" cy="60" r="50"
+                          data-score="100"
+                          stroke-dasharray="314.16"
+                          stroke-dashoffset="314.16"/>
+                </svg>
+                <figcaption aria-hidden="true">
+                  <span class="gauge-score" data-target="100" style="color:var(--color-good)">0</span>
+                  <span class="gauge-label">Accessibility</span>
+                </figcaption>
+              </figure>
+
+              <figure class="gauge-figure">
+                <svg class="gauge-svg" viewBox="0 0 120 120" role="img"
+                     aria-label="Best Practices score after: 100 out of 100">
+                  <circle class="gauge-track" cx="60" cy="60" r="50"/>
+                  <circle class="gauge-arc gauge-arc--good" cx="60" cy="60" r="50"
+                          data-score="100"
+                          stroke-dasharray="314.16"
+                          stroke-dashoffset="314.16"/>
+                </svg>
+                <figcaption aria-hidden="true">
+                  <span class="gauge-score" data-target="100" style="color:var(--color-good)">0</span>
+                  <span class="gauge-label">Best Practices</span>
+                </figcaption>
+              </figure>
+
+              <figure class="gauge-figure">
+                <svg class="gauge-svg" viewBox="0 0 120 120" role="img"
+                     aria-label="SEO score after: 100 out of 100">
+                  <circle class="gauge-track" cx="60" cy="60" r="50"/>
+                  <circle class="gauge-arc gauge-arc--good" cx="60" cy="60" r="50"
+                          data-score="100"
+                          stroke-dasharray="314.16"
+                          stroke-dashoffset="314.16"/>
+                </svg>
+                <figcaption aria-hidden="true">
+                  <span class="gauge-score" data-target="100" style="color:var(--color-good)">0</span>
+                  <span class="gauge-label">SEO</span>
+                </figcaption>
+              </figure>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Core Web Vitals Table ─────────────────────────────────────────── -->
+    <section id="vitals" class="section section-alt" aria-labelledby="vitals-heading">
+      <div class="container">
+        <h2 id="vitals-heading" class="section-heading">Core Web Vitals</h2>
+        <p class="section-subhead">Lab data from WebPageTest on a simulated Moto G4, 4G connection.</p>
+
+        <div class="table-wrapper scroll-reveal"
+             role="region"
+             aria-label="Core Web Vitals comparison table"
+             tabindex="0">
+          <table>
+            <caption class="sr-only">Core Web Vitals: Before and After Optimization</caption>
+            <thead>
+              <tr>
+                <th scope="col">Metric</th>
+                <th scope="col">Before</th>
+                <th scope="col">After</th>
+                <th scope="col">Change</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">
+                  LCP
+                  <small>Largest Contentful Paint</small>
+                </th>
+                <td class="metric-bad">8.4s</td>
+                <td class="metric-good">0.9s</td>
+                <td class="metric-improvement">&minus;89%</td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  CLS
+                  <small>Cumulative Layout Shift</small>
+                </th>
+                <td class="metric-bad">0.34</td>
+                <td class="metric-good">0.01</td>
+                <td class="metric-improvement">&minus;97%</td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  INP
+                  <small>Interaction to Next Paint</small>
+                </th>
+                <td class="metric-bad">380ms</td>
+                <td class="metric-good">42ms</td>
+                <td class="metric-improvement">&minus;89%</td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  TTFB
+                  <small>Time to First Byte</small>
+                </th>
+                <td class="metric-bad">1.2s</td>
+                <td class="metric-good">0.18s</td>
+                <td class="metric-improvement">&minus;85%</td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  Page Size
+                  <small>Total transfer weight</small>
+                </th>
+                <td class="metric-bad">5.8MB</td>
+                <td class="metric-good">312KB</td>
+                <td class="metric-improvement">&minus;95%</td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  HTTP Requests
+                  <small>Total network requests</small>
+                </th>
+                <td class="metric-bad">47</td>
+                <td class="metric-good">12</td>
+                <td class="metric-improvement">&minus;74%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Try It ────────────────────────────────────────────────────────── -->
+    <section id="try-it" class="section" aria-labelledby="try-it-heading">
+      <div class="container">
+        <h2 id="try-it-heading" class="section-heading">Try Both Versions</h2>
+        <p class="section-subhead">
+          Open each demo and run Lighthouse yourself &mdash; or just feel the difference.
+        </p>
+
+        <div class="demo-cards">
+
+          <article class="demo-card demo-card--bad scroll-reveal" aria-labelledby="demo-before-title">
+            <div class="demo-card-score" aria-hidden="true">23</div>
+            <h3 id="demo-before-title">Before Optimization</h3>
+            <ul class="demo-issues" role="list">
+              <li>4.2MB uncompressed PNG hero image</li>
+              <li>Render-blocking Bootstrap 5 + jQuery</li>
+              <li>CSS @import font loading</li>
+              <li>No image dimensions &mdash; CLS 0.34</li>
+            </ul>
+            <a href="/before/"
+               class="btn btn-secondary"
+               target="_blank"
+               rel="noopener"
+               aria-label="Open the unoptimized Before demo in a new tab">
+              Open Before Demo
+            </a>
+          </article>
+
+          <article class="demo-card demo-card--good scroll-reveal" aria-labelledby="demo-after-title">
+            <div class="demo-card-score" aria-hidden="true">98</div>
+            <h3 id="demo-after-title">After Optimization</h3>
+            <ul class="demo-wins" role="list">
+              <li>WebP hero at 180KB, LCP 0.9s</li>
+              <li>Zero render-blocking resources</li>
+              <li>Semantic HTML5, WCAG AA accessible</li>
+              <li>CLS 0.01, Lighthouse 98/100/100/100</li>
+            </ul>
+            <a href="/after/"
+               class="btn btn-primary"
+               target="_blank"
+               rel="noopener"
+               aria-label="Open the fully optimized After demo in a new tab">
+              Open After Demo
+            </a>
+          </article>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Tools Used ────────────────────────────────────────────────────── -->
+    <section id="tools" class="section section-alt" aria-labelledby="tools-heading">
+      <div class="container">
+        <h2 id="tools-heading" class="section-heading">Tools Used</h2>
+        <p class="section-subhead">All free. No paid subscriptions required.</p>
+
+        <div class="tools-grid">
+
+          <article class="tool-card scroll-reveal" aria-labelledby="tool-1">
+            <span class="tool-badge">Free</span>
+            <h3 id="tool-1">Chrome DevTools</h3>
+            <p>Performance tab for flame charts and main thread analysis. Network tab for
+            waterfall timing. Coverage tab to identify unused CSS and JS.</p>
+          </article>
+
+          <article class="tool-card scroll-reveal" aria-labelledby="tool-2">
+            <span class="tool-badge">Free</span>
+            <h3 id="tool-2">PageSpeed Insights</h3>
+            <p>Google's tool combining Lighthouse lab data with real-world Chrome User
+            Experience Report (CrUX) field data from actual users.</p>
+          </article>
+
+          <article class="tool-card scroll-reveal" aria-labelledby="tool-3">
+            <span class="tool-badge">Free</span>
+            <h3 id="tool-3">Squoosh</h3>
+            <p>Browser-based image compression by Google. Used to convert the 4.2MB PNG
+            hero to WebP at quality 80, achieving a 96% file size reduction.</p>
+          </article>
+
+          <article class="tool-card scroll-reveal" aria-labelledby="tool-4">
+            <span class="tool-badge">Free</span>
+            <h3 id="tool-4">WebPageTest</h3>
+            <p>Detailed waterfall analysis from real devices on real networks worldwide.
+            Used for the filmstrip view to document the visible loading progression.</p>
+          </article>
+
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ─── Footer ─────────────────────────────────────────────────────────── -->
+  <footer class="site-footer" role="contentinfo">
+    <div class="container">
+      <div class="footer-inner">
+        <p class="footer-disclaimer">
+          BlueMorning Coffee is a fictional business created for this performance case study.
+          All metrics are representative of real-world results from applying the documented optimizations.
+        </p>
+        <nav class="footer-nav" aria-label="Footer navigation">
+          <ul role="list">
+            <li><a href="/before/" target="_blank" rel="noopener">View Before Demo</a></li>
+            <li><a href="/after/" target="_blank" rel="noopener">View After Demo</a></li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

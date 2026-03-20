@@ -1,6 +1,6 @@
 # BlueMorning Coffee — Web Performance Case Study
 
-A real-world web performance case study documenting how a fictional local business site was taken from **Lighthouse 23 to 98** by eliminating render-blocking resources, fixing cumulative layout shift, and cutting page weight by 95%.>
+A real-world web performance case study documenting how a fictional local business site was taken from **Lighthouse 23 to 98** by eliminating render-blocking resources, fixing cumulative layout shift, and cutting page weight by 95%.
 
 ---
 

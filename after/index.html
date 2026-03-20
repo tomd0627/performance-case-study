@@ -21,15 +21,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-  <!-- FIX 4: Non-blocking font load via media="print" trick.
-       media="print" means the browser fetches it at low priority without blocking render.
-       onload swaps it to media="all" once it has downloaded. -->
-  <link rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
-        media="print"
-        onload="this.media='all'">
+  <!-- FIX 4: Non-blocking font load via JS injection (CSP-safe).
+       The media="print"/onload trick requires script-src 'unsafe-inline'.
+       Fonts and below-fold CSS are both injected by after-app.js instead. -->
   <noscript>
-    <!-- Fallback for users with JS disabled -->
     <link rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap">
   </noscript>

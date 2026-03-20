@@ -2,6 +2,16 @@
 // Loaded with defer; no IIFE, no DOMContentLoaded needed.
 // ES2020+: const/let, optional chaining, arrow functions, template literals only.
 
+// ─── 0. Non-blocking Font Load ────────────────────────────────────────────
+// The media="print"/onload trick requires script-src 'unsafe-inline' in CSP.
+// JS injection is the CSP-safe equivalent — same non-blocking behaviour.
+(() => {
+  const link = document.createElement('link');
+  link.rel  = 'stylesheet';
+  link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap';
+  document.head.appendChild(link);
+})();
+
 const prefersReducedMotion = window.matchMedia(
   '(prefers-reduced-motion: reduce)'
 ).matches;

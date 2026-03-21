@@ -130,16 +130,31 @@ const CIRCUMFERENCE = 314.16; // 2π × r(50)
 const animateGauge = (arcEl) => {
   const score        = parseInt(arcEl.dataset.score, 10);
   const targetOffset = CIRCUMFERENCE * (1 - score / 100);
-  // CSS transition handles the visual sweep; JS sets the final value.
-  arcEl.style.strokeDashoffset = targetOffset;
+  const duration     = 1400;
+  const start        = performance.now();
+
+  const easeOutCubic = (t) => 1 - (1 - t) ** 3;
+
+  const tick = (now) => {
+    const progress = Math.min((now - start) / duration, 1);
+    const current  = CIRCUMFERENCE + (targetOffset - CIRCUMFERENCE) * easeOutCubic(progress);
+    arcEl.setAttribute('stroke-dashoffset', current);
+    if (progress < 1) requestAnimationFrame(tick);
+  };
+
+  requestAnimationFrame(tick);
 };
 
 if (!prefersReducedMotion) {
+  // Observe the parent <figure> (an HTML element) rather than the SVG <circle>
+  // directly — IntersectionObserver does not reliably fire for SVG child elements
+  // on iOS Safari, which is why every style/WAAPI approach appeared broken.
   const gaugeObserver = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
-          animateGauge(entry.target);
+          const arcEl = entry.target.querySelector('.gauge-arc[data-score]');
+          if (arcEl) animateGauge(arcEl);
           gaugeObserver.unobserve(entry.target);
         }
       });
@@ -147,14 +162,13 @@ if (!prefersReducedMotion) {
     { threshold: 0.4 }
   );
 
-  document.querySelectorAll('.gauge-arc[data-score]').forEach((el) => {
-    gaugeObserver.observe(el);
+  document.querySelectorAll('.gauge-figure').forEach((fig) => {
+    gaugeObserver.observe(fig);
   });
 } else {
-  // Reduced motion: set final state instantly, suppress CSS transition
+  // Reduced motion: set final state instantly
   document.querySelectorAll('.gauge-arc[data-score]').forEach((arcEl) => {
-    arcEl.style.transition       = 'none';
-    arcEl.style.strokeDashoffset = CIRCUMFERENCE * (1 - parseInt(arcEl.dataset.score, 10) / 100);
+    arcEl.setAttribute('stroke-dashoffset', CIRCUMFERENCE * (1 - parseInt(arcEl.dataset.score, 10) / 100));
   });
 }
 
